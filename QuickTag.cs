@@ -55,8 +55,13 @@ namespace QuickTag
                 foreach (var tag in Settings.Tags)
                     yield return ConstructGameMenuItem(_ => AddTagToGames(TextToTag(tag)), tag);
 
-                foreach (var tag in SelectedGames.SelectMany(g => g.Tags.Select(t => t.Name)).Distinct())
-                    yield return ConstructGameMenuItem(_ => RemoveTagFromGames(tag), tag, "|Remove");
+                var uniqueTags = SelectedGames.Where(g => g.Tags != null).SelectMany(g => g.Tags).Distinct().ToList();
+
+                foreach (var tag in PlayniteApi.Database.Tags?.Where(t => !uniqueTags.Contains(t)))
+                    yield return ConstructGameMenuItem(_ => AddTagToGames(tag), tag.Name, "|Add");
+
+                foreach (var tag in uniqueTags)
+                    yield return ConstructGameMenuItem(_ => RemoveTagFromGames(tag), tag.Name, "|Remove");
             }
         }
 
@@ -130,10 +135,8 @@ namespace QuickTag
             }
         }
 
-        private void RemoveTagFromGames(string tagText)
+        private void RemoveTagFromGames(Tag tag)
         {
-            var tag = TextToTag(tagText);
-
             foreach (var game in SelectedGames) if (game.Tags != null && game.TagIds.Remove(tag.Id))
                 Games.Update(game);
         }
